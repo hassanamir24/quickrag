@@ -6,11 +6,11 @@
 
 class Quickrag < Formula
   desc "A fast and flexible RAG tool for indexing and querying documents"
-  homepage "https://github.com/YOUR_USERNAME/quickrag"
-  url "https://github.com/YOUR_USERNAME/quickrag/archive/refs/heads/main.tar.gz"
+  homepage "https://github.com/statico/quickrag"
+  url "https://github.com/statico/quickrag/archive/refs/heads/main.tar.gz"
   version "0.1.0"
   license "MIT"
-  head "https://github.com/YOUR_USERNAME/quickrag.git", branch: "main"
+  head "https://github.com/statico/quickrag.git", branch: "main"
 
   depends_on "bun"
 

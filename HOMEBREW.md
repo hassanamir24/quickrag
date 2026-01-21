@@ -6,7 +6,7 @@ This guide explains how to set up QuickRAG as a Homebrew tap for easy installati
 
 ### Step 1: Create the Tap Repository
 
-1. Create a new GitHub repository named `homebrew-quickrag` (or `homebrew-<your-username>`)
+1. Create a new GitHub repository named `homebrew-quickrag` (or `homebrew-statico`)
    - The repository name must start with `homebrew-`
    - Make it public (Homebrew requires public taps)
 
@@ -19,7 +19,7 @@ This guide explains how to set up QuickRAG as a Homebrew tap for easy installati
 3. Edit the formula file to update:
    - `homepage`: Your GitHub repository URL
    - `url`: The release or source URL
-   - Replace `YOUR_USERNAME` with your actual GitHub username
+   - The formula already uses `statico` as the username
 
 ### Step 2: Push to GitHub
 
@@ -28,7 +28,7 @@ cd /path/to/homebrew-quickrag
 git init
 git add quickrag.rb
 git commit -m "Add quickrag formula"
-git remote add origin https://github.com/YOUR_USERNAME/homebrew-quickrag.git
+git remote add origin https://github.com/statico/homebrew-quickrag.git
 git push -u origin main
 ```
 
@@ -37,7 +37,7 @@ git push -u origin main
 Users can now install QuickRAG with:
 
 ```sh
-brew tap YOUR_USERNAME/quickrag
+brew tap statico/quickrag
 brew install quickrag
 ```
 
@@ -52,7 +52,7 @@ brew install --build-from-source /path/to/quickrag/Formula/quickrag.rb
 Or if the formula is hosted online:
 
 ```sh
-brew install https://raw.githubusercontent.com/YOUR_USERNAME/quickrag/main/Formula/quickrag.rb
+brew install https://raw.githubusercontent.com/statico/quickrag/main/Formula/quickrag.rb
 ```
 
 ## Formula Details

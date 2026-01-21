@@ -1,8 +1,8 @@
 # QuickRAG
 
-[![Build](https://github.com/YOUR_USERNAME/quickrag/actions/workflows/build.yml/badge.svg)](https://github.com/YOUR_USERNAME/quickrag/actions/workflows/build.yml)
-[![Release](https://img.shields.io/github/v/release/YOUR_USERNAME/quickrag)](https://github.com/YOUR_USERNAME/quickrag/releases)
-[![License](https://img.shields.io/github/license/YOUR_USERNAME/quickrag)](LICENSE)
+[![Build](https://github.com/statico/quickrag/actions/workflows/build.yml/badge.svg)](https://github.com/statico/quickrag/actions/workflows/build.yml)
+[![Release](https://img.shields.io/github/v/release/statico/quickrag)](https://github.com/statico/quickrag/releases)
+[![License](https://img.shields.io/github/license/statico/quickrag)](LICENSE)
 
 A fast and flexible RAG (Retrieval-Augmented Generation) tool that indexes parseable documents (text, markdown) using your choice of embedding provider and stores them in a LanceDB database for efficient similarity search.
 
@@ -164,7 +164,7 @@ Install via Homebrew tap:
 
 ```sh
 # Add the tap
-brew tap YOUR_USERNAME/quickrag
+brew tap statico/quickrag
 
 # Install quickrag
 brew install quickrag
@@ -173,7 +173,7 @@ brew install quickrag
 Or install directly from the formula:
 
 ```sh
-brew install YOUR_USERNAME/quickrag/quickrag
+brew install statico/quickrag/quickrag
 ```
 
 **Setting up a Homebrew Tap:**
@@ -181,12 +181,12 @@ brew install YOUR_USERNAME/quickrag/quickrag
 See [HOMEBREW.md](HOMEBREW.md) for detailed instructions on creating and maintaining a Homebrew tap.
 
 Quick setup:
-1. Create a new repository named `homebrew-quickrag` (or `homebrew-<your-username>`)
+1. Create a new repository named `homebrew-quickrag` (or `homebrew-statico`)
 2. Copy the formula file from `Formula/quickrag.rb` to your tap repository
 3. Update the `homepage` and `url` fields in the formula to point to your repository
 4. Users can then install with:
    ```sh
-   brew tap YOUR_USERNAME/quickrag
+   brew tap statico/quickrag
    brew install quickrag
    ```
 
@@ -206,7 +206,7 @@ Note: macOS binaries are not codesigned. You may need to right-click and select 
 Requires [Bun](https://bun.sh).
 
 ```sh
-git clone https://github.com/YOUR_USERNAME/quickrag.git
+git clone https://github.com/statico/quickrag.git
 cd quickrag
 bun install
 bun run dev --help
