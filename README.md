@@ -158,6 +158,38 @@ The chunking algorithm can be tuned via configuration:
 
 ## Installation
 
+### Homebrew (Recommended)
+
+Install via Homebrew tap:
+
+```sh
+# Add the tap
+brew tap YOUR_USERNAME/quickrag
+
+# Install quickrag
+brew install quickrag
+```
+
+Or install directly from the formula:
+
+```sh
+brew install YOUR_USERNAME/quickrag/quickrag
+```
+
+**Setting up a Homebrew Tap:**
+
+See [HOMEBREW.md](HOMEBREW.md) for detailed instructions on creating and maintaining a Homebrew tap.
+
+Quick setup:
+1. Create a new repository named `homebrew-quickrag` (or `homebrew-<your-username>`)
+2. Copy the formula file from `Formula/quickrag.rb` to your tap repository
+3. Update the `homepage` and `url` fields in the formula to point to your repository
+4. Users can then install with:
+   ```sh
+   brew tap YOUR_USERNAME/quickrag
+   brew install quickrag
+   ```
+
 ### Download Binary
 
 Grab the latest release for your platform from the [Releases page](../../releases).
@@ -174,6 +206,8 @@ Note: macOS binaries are not codesigned. You may need to right-click and select 
 Requires [Bun](https://bun.sh).
 
 ```sh
+git clone https://github.com/YOUR_USERNAME/quickrag.git
+cd quickrag
 bun install
 bun run dev --help
 ```
