@@ -8,10 +8,25 @@ export async function queryDatabase(
   embeddingProvider: EmbeddingProvider,
   topK: number = 5
 ): Promise<IndexedChunk[]> {
+  // Initialize with a placeholder dimension - will be detected from existing database
   const db = new RAGDatabase(dbPath, embeddingProvider.getDimensions());
   await db.initialize();
   
+  // Get the actual dimensions from the database (may differ from provider if table exists)
+  const dbDimensions = db.getDimensions();
+  
+  // Generate query vector
   const queryVector = await embeddingProvider.embed(query);
+  
+  // Validate that the embedding provider produces vectors matching the database
+  if (queryVector.length !== dbDimensions) {
+    throw new Error(
+      `Embedding dimension mismatch: database expects ${dbDimensions} dimensions, ` +
+      `but the embedding provider (${embeddingProvider.constructor.name}) produces ${queryVector.length} dimensions. ` +
+      `Please use the same embedding model that was used for indexing.`
+    );
+  }
+  
   const results = await db.search(queryVector, topK);
   
   return results;

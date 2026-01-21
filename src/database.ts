@@ -24,13 +24,84 @@ export class RAGDatabase {
     this.dimensions = dimensions;
   }
 
+  getDimensions(): number {
+    return this.dimensions;
+  }
+
   async initialize(): Promise<void> {
     this.db = await lancedb.connect(this.dbPath);
     
     // Check if table exists
     try {
       this.table = await this.db.openTable("documents");
-    } catch {
+      
+      // If table exists, detect dimensions from the first vector
+      // This ensures we use the correct dimensions even if a different embedding provider is used for querying
+      // Use vectorSearch with a dummy query to get the first row
+      // Create a dummy vector with the expected dimensions (will be adjusted if wrong)
+      const dummyVector = new Array(this.dimensions).fill(0);
+      try {
+        const sample = await this.table
+          .vectorSearch(dummyVector)
+          .limit(1)
+          .toArray();
+        if (sample.length > 0) {
+          const firstRow = sample[0] as Record<string, unknown>;
+          const vector = firstRow.vector;
+          // Handle different vector formats (Array, Float32Array, etc.)
+          let vectorArray: number[];
+          if (Array.isArray(vector)) {
+            vectorArray = vector as number[];
+          } else if (vector && typeof vector === 'object' && 'length' in vector) {
+            // Handle typed arrays like Float32Array
+            vectorArray = Array.from(vector as ArrayLike<number>);
+          } else {
+            throw new Error(`Unable to read vector from database - unexpected format: ${typeof vector}, ${vector?.constructor?.name || 'unknown'}`);
+          }
+          
+          if (vectorArray.length > 0) {
+            // Always update to match the database dimensions
+            this.dimensions = vectorArray.length;
+          } else {
+            throw new Error("Vector from database is empty");
+          }
+        } else {
+          throw new Error("No rows found in database table");
+        }
+      } catch (searchError) {
+        // If vectorSearch fails due to dimension mismatch, try common dimension sizes
+        // This handles the case where the initial dimension guess is wrong
+        const commonDimensions = [512, 768, 1024, 1536, 2048, 3072];
+        for (const testDim of commonDimensions) {
+          try {
+            const testVector = new Array(testDim).fill(0);
+            const sample = await this.table
+              .vectorSearch(testVector)
+              .limit(1)
+              .toArray();
+            if (sample.length > 0) {
+              const firstRow = sample[0] as Record<string, unknown>;
+              const vector = firstRow.vector;
+              let vectorArray: number[];
+              if (Array.isArray(vector)) {
+                vectorArray = vector as number[];
+              } else if (vector && typeof vector === 'object' && 'length' in vector) {
+                vectorArray = Array.from(vector as ArrayLike<number>);
+              } else {
+                continue;
+              }
+              if (vectorArray.length > 0) {
+                this.dimensions = vectorArray.length;
+                break;
+              }
+            }
+          } catch {
+            // Try next dimension
+            continue;
+          }
+        }
+      }
+    } catch (error) {
       // Table doesn't exist, will be created in indexChunks with first batch
       this.table = null;
     }

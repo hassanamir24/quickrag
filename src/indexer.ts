@@ -18,7 +18,13 @@ export async function indexDirectory(
   
   console.log(`Found ${chunks.length} chunks from ${dirPath}`);
   
-  const db = new RAGDatabase(dbPath, embeddingProvider.getDimensions());
+  // Initialize embedding provider dimensions by generating a test embedding
+  // This ensures we get the correct dimensions before creating the database
+  const testEmbedding = await embeddingProvider.embed(chunks[0].text);
+  const dimensions = testEmbedding.length;
+  console.log(`Detected embedding dimensions: ${dimensions}`);
+  
+  const db = new RAGDatabase(dbPath, dimensions);
   await db.initialize();
   await db.indexChunks(chunks, embeddingProvider);
   
