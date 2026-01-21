@@ -4,12 +4,7 @@
 [![Release](https://img.shields.io/github/v/release/statico/quickrag)](https://github.com/statico/quickrag/releases)
 [![License: Unlicense](https://img.shields.io/badge/license-Unlicense-blue.svg)](http://unlicense.org/)
 
-> [!WARNING]
-> This project was completely vibe-coded with [Claude Code](https://claude.com/claude-code) and [Cursor](https://www.cursor.com/).
-
 A fast and flexible RAG (Retrieval-Augmented Generation) tool that indexes parseable documents (text, markdown) using your choice of embedding provider and stores them in a LanceDB database for efficient similarity search.
-
-> **Note for AI Tools**: This tool is designed primarily for use by other AI tools and agents for searching data in a corpus. The tool provides extensive `--help` documentation that AI tools can read to understand its full functionality and available options. Run `quickrag --help`, `quickrag index --help`, or `quickrag query --help` to explore all available commands and parameters.
 
 ## Quick Example
 
@@ -43,6 +38,13 @@ He shrugged his shoulders. “Well, perhaps, after all, it is of some
 little use,” he remarked. “‘_L’homme c’est rien—l’œuvre c’est tout_,’
 as Gustave Flaubert wrote to George Sand.”
 ```
+
+## Quick Notes
+
+**Note for AI Tools**: This tool is designed primarily for use by other AI tools and agents for searching data in a corpus. The tool provides extensive `--help` documentation that AI tools can read to understand its full functionality and available options. Run `quickrag --help`, `quickrag index --help`, or `quickrag query --help` to explore all available commands and parameters.
+
+> [!WARNING]
+> This project was completely vibe-coded with [Claude Code](https://claude.com/claude-code) and [Cursor](https://www.cursor.com/).
 
 ## Features
 
