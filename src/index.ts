@@ -9,6 +9,54 @@ import { OllamaEmbeddingProvider } from "./embeddings/ollama.js";
 import { loadConfig, createDefaultConfig, type QuickRAGConfig } from "./config.js";
 import type { EmbeddingProvider } from "./embeddings/base.js";
 
+interface EmbeddingOptions {
+  provider: "openai" | "voyageai" | "ollama";
+  apiKey?: string;
+  model: string;
+  baseUrl: string;
+}
+
+interface QueryOptions extends EmbeddingOptions {
+  topK: number;
+}
+
+async function parseEmbeddingOptions(
+  options: any,
+  config: QuickRAGConfig
+): Promise<EmbeddingOptions> {
+  const provider = (options.provider || config.provider || "ollama") as "openai" | "voyageai" | "ollama";
+  const model = options.model || config.model || "nomic-embed-text";
+  const baseUrl = options.baseUrl || config.baseUrl || "http://localhost:11434";
+  
+  // Get API key from CLI, config, or environment
+  let apiKey = options.apiKey;
+  if (!apiKey) {
+    if (provider === "openai") {
+      apiKey = config.apiKey || process.env.OPENAI_API_KEY;
+    } else if (provider === "voyageai") {
+      apiKey = config.apiKey || process.env.VOYAGE_API_KEY;
+    }
+  }
+  
+  return { provider, apiKey, model, baseUrl };
+}
+
+function parseTopK(options: any, defaultValue: number = 5): number {
+  // Commander.js converts --top-k to topK (camelCase)
+  const topK = options.topK ?? options["top-k"];
+  if (typeof topK === "number") {
+    return Math.max(1, Math.floor(topK));
+  }
+  if (typeof topK === "string") {
+    const parsed = parseInt(topK, 10);
+    if (isNaN(parsed) || parsed < 1) {
+      return defaultValue;
+    }
+    return parsed;
+  }
+  return defaultValue;
+}
+
 const program = new Command();
 
 program
@@ -36,31 +84,29 @@ program
   .option("--chunk-overlap <number>", "Chunk overlap in characters")
   .action(async (directory, options) => {
     const config = await loadConfig();
-    
-    // Merge config with CLI options (CLI takes precedence)
-    const provider = (options.provider || config.provider || "ollama") as "openai" | "voyageai" | "ollama";
-    const model = options.model || config.model || "nomic-embed-text";
-    const baseUrl = options.baseUrl || config.baseUrl || "http://localhost:11434";
-    
-    // Get API key from CLI, config, or environment
-    let apiKey = options.apiKey;
-    if (!apiKey) {
-      if (provider === "openai") {
-        apiKey = config.apiKey || process.env.OPENAI_API_KEY;
-      } else if (provider === "voyageai") {
-        apiKey = config.apiKey || process.env.VOYAGE_API_KEY;
-      }
-    }
+    const embeddingOpts = await parseEmbeddingOptions(options, config);
     
     // Chunking options
     const chunkSize = options.chunkSize 
-      ? parseInt(options.chunkSize) 
+      ? parseInt(String(options.chunkSize), 10) 
       : (config.chunking?.chunkSize || 1000);
     const chunkOverlap = options.chunkOverlap 
-      ? parseInt(options.chunkOverlap) 
+      ? parseInt(String(options.chunkOverlap), 10) 
       : (config.chunking?.chunkOverlap || 200);
     
-    const embeddingProvider = createEmbeddingProvider(provider, apiKey, model, baseUrl);
+    if (isNaN(chunkSize) || chunkSize <= 0) {
+      throw new Error("chunk-size must be a positive number");
+    }
+    if (isNaN(chunkOverlap) || chunkOverlap < 0) {
+      throw new Error("chunk-overlap must be a non-negative number");
+    }
+    
+    const embeddingProvider = createEmbeddingProvider(
+      embeddingOpts.provider,
+      embeddingOpts.apiKey,
+      embeddingOpts.model,
+      embeddingOpts.baseUrl
+    );
     
     await indexDirectory(
       directory, 
@@ -82,29 +128,21 @@ program
   .option("-t, --top-k <number>", "Number of results to return", "5")
   .action(async (database, query, options) => {
     const config = await loadConfig();
+    const embeddingOpts = await parseEmbeddingOptions(options, config);
+    const topK = parseTopK(options, 5);
     
-    // Merge config with CLI options (CLI takes precedence)
-    const provider = (options.provider || config.provider || "ollama") as "openai" | "voyageai" | "ollama";
-    const model = options.model || config.model || "nomic-embed-text";
-    const baseUrl = options.baseUrl || config.baseUrl || "http://localhost:11434";
-    
-    // Get API key from CLI, config, or environment
-    let apiKey = options.apiKey;
-    if (!apiKey) {
-      if (provider === "openai") {
-        apiKey = config.apiKey || process.env.OPENAI_API_KEY;
-      } else if (provider === "voyageai") {
-        apiKey = config.apiKey || process.env.VOYAGE_API_KEY;
-      }
-    }
-    
-    const embeddingProvider = createEmbeddingProvider(provider, apiKey, model, baseUrl);
+    const embeddingProvider = createEmbeddingProvider(
+      embeddingOpts.provider,
+      embeddingOpts.apiKey,
+      embeddingOpts.model,
+      embeddingOpts.baseUrl
+    );
     
     const results = await queryDatabase(
       database,
       query,
       embeddingProvider,
-      parseInt(options.topK || "5")
+      topK
     );
     
     console.log(formatResults(results));
@@ -121,23 +159,15 @@ program
   .option("-t, --top-k <number>", "Number of results to return", "5")
   .action(async (database, options) => {
     const config = await loadConfig();
+    const embeddingOpts = await parseEmbeddingOptions(options, config);
+    const topK = parseTopK(options, 5);
     
-    // Merge config with CLI options (CLI takes precedence)
-    const provider = (options.provider || config.provider || "ollama") as "openai" | "voyageai" | "ollama";
-    const model = options.model || config.model || "nomic-embed-text";
-    const baseUrl = options.baseUrl || config.baseUrl || "http://localhost:11434";
-    
-    // Get API key from CLI, config, or environment
-    let apiKey = options.apiKey;
-    if (!apiKey) {
-      if (provider === "openai") {
-        apiKey = config.apiKey || process.env.OPENAI_API_KEY;
-      } else if (provider === "voyageai") {
-        apiKey = config.apiKey || process.env.VOYAGE_API_KEY;
-      }
-    }
-    
-    const embeddingProvider = createEmbeddingProvider(provider, apiKey, model, baseUrl);
+    const embeddingProvider = createEmbeddingProvider(
+      embeddingOpts.provider,
+      embeddingOpts.apiKey,
+      embeddingOpts.model,
+      embeddingOpts.baseUrl
+    );
     
     console.log("Interactive mode. Type 'exit' or 'quit' to exit.\n");
     
@@ -161,11 +191,11 @@ program
               database,
               query,
               embeddingProvider,
-              parseInt(options.topK || "5")
+              topK
             );
             console.log("\n" + formatResults(results) + "\n");
           } catch (error) {
-            console.error("Error:", error);
+            console.error("Error:", error instanceof Error ? error.message : String(error));
           }
         }
         

@@ -76,10 +76,31 @@ export class RAGDatabase {
     // Create table if it doesn't exist, or add to existing table
     if (!this.table) {
       console.log("Creating new table with first batch...");
-      this.table = await this.db.createTable("documents", indexedChunks as any);
+      // LanceDB accepts arrays of objects - ensure proper structure
+      const tableData = indexedChunks.map(chunk => ({
+        id: chunk.id,
+        text: chunk.text,
+        filePath: chunk.filePath,
+        startLine: chunk.startLine,
+        endLine: chunk.endLine,
+        startChar: chunk.startChar,
+        endChar: chunk.endChar,
+        vector: chunk.vector,
+      }));
+      this.table = await this.db.createTable("documents", tableData);
     } else {
       console.log("Inserting into database...");
-      await this.table.add(indexedChunks as any);
+      const tableData = indexedChunks.map(chunk => ({
+        id: chunk.id,
+        text: chunk.text,
+        filePath: chunk.filePath,
+        startLine: chunk.startLine,
+        endLine: chunk.endLine,
+        startChar: chunk.startChar,
+        endChar: chunk.endChar,
+        vector: chunk.vector,
+      }));
+      await this.table.add(tableData);
     }
     
     console.log(`Successfully indexed ${indexedChunks.length} chunks.`);
@@ -98,15 +119,15 @@ export class RAGDatabase {
       .limit(topK)
       .toArray();
 
-    return results.map((result: any) => ({
-      id: result.id,
-      text: result.text,
-      filePath: result.filePath,
-      startLine: result.startLine,
-      endLine: result.endLine,
-      startChar: result.startChar,
-      endChar: result.endChar,
-      vector: result.vector,
+    return results.map((result: Record<string, unknown>) => ({
+      id: String(result.id ?? ""),
+      text: String(result.text ?? ""),
+      filePath: String(result.filePath ?? ""),
+      startLine: Number(result.startLine ?? 0),
+      endLine: Number(result.endLine ?? 0),
+      startChar: Number(result.startChar ?? 0),
+      endChar: Number(result.endChar ?? 0),
+      vector: Array.isArray(result.vector) ? result.vector as number[] : [],
     }));
   }
 
