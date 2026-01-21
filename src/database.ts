@@ -17,7 +17,7 @@ export class RAGDatabase {
   private dbPath: string;
   private table: lancedb.Table | null = null;
   private dimensions: number;
-  private db: any = null;
+  private db: Awaited<ReturnType<typeof lancedb.connect>> | null = null;
 
   constructor(dbPath: string, dimensions: number) {
     this.dbPath = dbPath;
@@ -42,6 +42,10 @@ export class RAGDatabase {
   ): Promise<void> {
     if (!this.db) {
       throw new Error("Database not initialized. Call initialize() first.");
+    }
+    if (chunks.length === 0) {
+      console.log("No chunks to index.");
+      return;
     }
 
     console.log(`Indexing ${chunks.length} chunks...`);
@@ -110,8 +114,16 @@ export class RAGDatabase {
     queryVector: number[],
     topK: number = 5
   ): Promise<IndexedChunk[]> {
-    if (!this.table) {
+    if (!this.db) {
       throw new Error("Database not initialized. Call initialize() first.");
+    }
+    if (!this.table) {
+      throw new Error("Table 'documents' does not exist. Please index documents first.");
+    }
+    if (queryVector.length !== this.dimensions) {
+      throw new Error(
+        `Query vector dimension mismatch: expected ${this.dimensions}, got ${queryVector.length}`
+      );
     }
 
     const results = await this.table

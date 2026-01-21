@@ -98,23 +98,32 @@ function chunkText(
   function getLineNumber(charPos: number): number {
     if (lineStarts.length <= 1) return 0;
     if (charPos < 0) return 0;
-    if (charPos >= lineStarts[lineStarts.length - 1]) {
+    
+    // If position is at or beyond the end of text, return the last line (0-indexed)
+    const lastLineStart = lineStarts[lineStarts.length - 1];
+    if (charPos >= lastLineStart) {
+      // Return the last line index (lineStarts.length - 2 because lineStarts has length + 1)
       return Math.max(0, lineStarts.length - 2);
     }
     
     // Binary search for the line containing this character
     let left = 0;
-    let right = lineStarts.length - 1;
-    while (left < right) {
+    let right = lineStarts.length - 2; // -2 because we check lineStarts[mid + 1]
+    while (left <= right) {
       const mid = Math.floor((left + right) / 2);
-      if (lineStarts[mid] <= charPos && charPos < lineStarts[mid + 1]) {
+      const lineStart = lineStarts[mid];
+      const nextLineStart = lineStarts[mid + 1];
+      
+      if (lineStart <= charPos && charPos < nextLineStart) {
         return mid;
-      } else if (charPos < lineStarts[mid]) {
-        right = mid;
+      } else if (charPos < lineStart) {
+        right = mid - 1;
       } else {
         left = mid + 1;
       }
     }
+    
+    // Fallback: should not reach here, but return last line if we do
     return Math.max(0, lineStarts.length - 2);
   }
   
@@ -166,10 +175,12 @@ function chunkText(
     }
     
     // Move start forward with overlap, ensuring progress
-    const nextStart = actualEnd - chunkOverlap;
+    // Ensure nextStart is never negative (safety check)
+    const nextStart = Math.max(0, actualEnd - chunkOverlap);
+    // Ensure we always make progress: move forward by at least 1 character
     startChar = Math.max(startChar + 1, nextStart);
     
-    // Safety check: ensure we always make progress
+    // Safety check: ensure we always make progress and don't get stuck
     if (startChar >= actualEnd) {
       startChar = actualEnd;
     }

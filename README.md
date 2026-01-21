@@ -11,6 +11,39 @@ A fast and flexible RAG (Retrieval-Augmented Generation) tool that indexes parse
 
 > **Note for AI Tools**: This tool is designed primarily for use by other AI tools and agents for searching data in a corpus. The tool provides extensive `--help` documentation that AI tools can read to understand its full functionality and available options. Run `quickrag --help`, `quickrag index --help`, or `quickrag query --help` to explore all available commands and parameters.
 
+## Quick Example
+
+```sh
+# Create a config
+$ quickrag init
+
+# Index my corpus of text files
+$ quickrag index gutenberg/ --output gutenberg.rag
+Parsing documents from gutenberg...
+Found 171800 chunks from gutenberg
+Indexing 171800 chunks...
+Embedding batch 1/1718...
+Embedding batch 2/1718...
+Embedding batch 3/1718...
+...
+
+# Search the corpus
+$ quickrag query gutenberg.rag "Who is Sherlock Holmes?"
+Found 5 results:
+...
+[5] gutenberg/sherlock-holmes.txt (lines 2156-2181)
+============================================================
+it closing in upon me. My life is spent in one long effort to escape
+from the commonplaces of existence. These little problems help me to do
+so.”
+
+“And you are a benefactor of the race,” said I.
+
+He shrugged his shoulders. “Well, perhaps, after all, it is of some
+little use,” he remarked. “‘_L’homme c’est rien—l’œuvre c’est tout_,’
+as Gustave Flaubert wrote to George Sand.”
+```
+
 ## Features
 
 - **Multiple Embedding Providers** - Support for VoyageAI, OpenAI, and Ollama
