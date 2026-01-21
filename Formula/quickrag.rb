@@ -9,7 +9,7 @@ class Quickrag < Formula
   homepage "https://github.com/statico/quickrag"
   url "https://github.com/statico/quickrag/archive/refs/heads/main.tar.gz"
   version "1.0.0"
-  license "MIT"
+  license "Unlicense"
   head "https://github.com/statico/quickrag.git", branch: "main"
 
   depends_on "bun"

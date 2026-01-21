@@ -2,7 +2,7 @@
 
 [![Build](https://github.com/statico/quickrag/actions/workflows/build.yml/badge.svg)](https://github.com/statico/quickrag/actions/workflows/build.yml)
 [![Release](https://img.shields.io/github/v/release/statico/quickrag)](https://github.com/statico/quickrag/releases)
-[![License](https://img.shields.io/github/license/statico/quickrag)](LICENSE)
+[![License: Unlicense](https://img.shields.io/badge/license-Unlicense-blue.svg)](http://unlicense.org/)
 
 A fast and flexible RAG (Retrieval-Augmented Generation) tool that indexes parseable documents (text, markdown) using your choice of embedding provider and stores them in a LanceDB database for efficient similarity search.
 
@@ -473,4 +473,6 @@ The `.rag` file is portable and can be shared or moved between systems.
 
 ## License
 
-MIT
+This is free and unencumbered software released into the public domain.
+
+For more information, see [UNLICENSE](UNLICENSE) or visit <https://unlicense.org>
