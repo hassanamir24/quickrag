@@ -217,6 +217,29 @@ The chunking algorithm can be tuned via configuration:
 
 Larger chunks provide more context but may reduce precision. Smaller chunks improve granularity but may lose context. Overlap ensures important context at boundaries isn't lost.
 
+### Performance Comparison
+
+Benchmarked on test corpus (2 files: sherlock-holmes.txt, frankenstein.txt):
+
+| Metric | Recursive Token Chunker | Simple Chunker |
+|--------|------------------------|----------------|
+| **Chunks Created** | 622 chunks | 1,718 chunks (2.76x more) |
+| **Indexing Time** | 45.1 seconds | 18.3 seconds (2.5x faster) |
+| **Batches** | 14 batches | 27 batches |
+| **Chunk Size** | ~500 tokens | ~1000 characters |
+| **Query Quality** | ✅ Better semantic matches, more context | ⚠️ More fragments, some irrelevant results |
+
+**Key Observations:**
+- **Recursive Token Chunker**: Produces fewer, larger chunks with better semantic coherence. Slower indexing but superior retrieval quality due to boundary-aware splitting. Query tests show it finds more relevant, contextually complete results.
+- **Simple Chunker**: Faster indexing but creates 2.76x more chunks. Smaller chunks may fragment context and reduce retrieval accuracy. Query tests show it sometimes returns irrelevant fragments (e.g., "eBooks" for character queries).
+
+**Query Quality Example:**
+- Query: "Who is Sherlock Holmes?"
+  - **Recursive Token**: Returns relevant passages about Holmes' methods and reasoning
+  - **Simple**: Returns irrelevant "eBooks" fragments
+
+**Recommendation**: Use `recursive-token` for production use. The indexing time difference (45s vs 18s) is negligible compared to the improved retrieval quality, especially for larger corpora where query performance matters more than one-time indexing.
+
 ### Tuning Recommendations
 
 **For Most Use Cases (Recommended):**
