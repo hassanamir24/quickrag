@@ -3,6 +3,7 @@
 import { Command } from "commander";
 import { indexDirectory } from "./indexer.js";
 import { queryDatabase, formatResults } from "./query.js";
+import { RAGDatabase } from "./database.js";
 import { OpenAIEmbeddingProvider } from "./embeddings/openai.js";
 import { VoyageAIEmbeddingProvider } from "./embeddings/voyageai.js";
 import { OllamaEmbeddingProvider } from "./embeddings/ollama.js";
@@ -141,6 +142,7 @@ program
 
 program
   .command("query")
+  .alias("search")
   .description("Query the indexed database")
   .argument("<database>", "Path to the .rag database file")
   .argument("<query>", "Query string")
@@ -170,6 +172,34 @@ program
     );
     
     logger.log(formatResults(results));
+  });
+
+program
+  .command("list")
+  .description("List all files and number of chunks in the database")
+  .argument("<database>", "Path to the .rag database file")
+  .action(async (database) => {
+    const db = new RAGDatabase(database, 768);
+    await db.initialize();
+    
+    const fileStats = await db.getFileStats();
+    
+    if (fileStats.length === 0) {
+      logger.log("No files found in database.");
+      return;
+    }
+    
+    const totalChunks = fileStats.reduce((sum, stat) => sum + stat.chunkCount, 0);
+    
+    logger.log(`\n${"═".repeat(70)}`);
+    logger.log(`  ${fileStats.length} file${fileStats.length !== 1 ? 's' : ''}, ${totalChunks} total chunk${totalChunks !== 1 ? 's' : ''}`);
+    logger.log(`${"═".repeat(70)}\n`);
+    
+    for (const stat of fileStats) {
+      logger.log(`  ${stat.filePath.padEnd(60)} ${stat.chunkCount.toString().padStart(6)} chunk${stat.chunkCount !== 1 ? 's' : ''}`);
+    }
+    
+    logger.log("");
   });
 
 program

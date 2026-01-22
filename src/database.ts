@@ -439,6 +439,25 @@ export class RAGDatabase {
     return { count };
   }
 
+  async getFileStats(): Promise<Array<{ filePath: string; chunkCount: number }>> {
+    if (!this.table) {
+      throw new Error("Database not initialized. Call initialize() first.");
+    }
+
+    const allChunks = await this.table.query().select(["filePath"]).toArray();
+    const fileCounts = new Map<string, number>();
+    
+    for (const row of allChunks) {
+      const record = row as Record<string, unknown>;
+      const filePath = String(record.filePath || "");
+      fileCounts.set(filePath, (fileCounts.get(filePath) || 0) + 1);
+    }
+    
+    return Array.from(fileCounts.entries())
+      .map(([filePath, chunkCount]) => ({ filePath, chunkCount }))
+      .sort((a, b) => a.filePath.localeCompare(b.filePath));
+  }
+
   async clearDatabase(): Promise<void> {
     if (!this.db) {
       throw new Error("Database not initialized. Call initialize() first.");
