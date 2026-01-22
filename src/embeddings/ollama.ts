@@ -71,9 +71,9 @@ export class OllamaEmbeddingProvider implements EmbeddingProvider {
       return [];
     }
     
-    // Ollama doesn't have native batch support, so we'll do it sequentially
-    // but with some concurrency
-    const batchSize = 5;
+    // Ollama doesn't have native batch support, so we'll do it with concurrency
+    // Increased batch size for better parallelism
+    const batchSize = 16;
     const results: number[][] = [];
     
     for (let i = 0; i < texts.length; i += batchSize) {

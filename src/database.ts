@@ -43,7 +43,7 @@ export class RAGDatabase {
       maxTextsPerBatch: 64,
       maxCharsPerBatch: 150000,
       maxTokensPerBatch: 20000,
-      maxConcurrentEmbeddings: 4,
+      maxConcurrentEmbeddings: 8,
     };
     
     this.batchingConfig = {
@@ -222,7 +222,7 @@ export class RAGDatabase {
     let skippedCount = 0;
 
     // Yield to event loop periodically to prevent blocking
-    const YIELD_INTERVAL = 50;
+    const YIELD_INTERVAL = 100;
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
       const hash = this.computeChunkHash(chunk.text);
@@ -233,7 +233,7 @@ export class RAGDatabase {
         skippedCount++;
       }
       
-      // Yield to event loop every YIELD_INTERVAL chunks to keep spinner alive
+      // Yield to event loop every YIELD_INTERVAL chunks to keep UI responsive
       if (i > 0 && i % YIELD_INTERVAL === 0) {
         await Promise.resolve();
         if (task && chunks.length > 50) {

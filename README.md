@@ -14,6 +14,15 @@ $ quickrag init
 
 # Index documents
 $ quickrag index gutenberg/ --output gutenberg.rag
+✔ Parsing documents from gutenberg/... (using recursive-token chunker)
+✔ Detecting embedding dimensions
+✔ Initializing database
+✔ Finding files to index
+✔ Preparing for indexing
+✔ Indexing files
+✔ Finalizing
+Indexing complete! Processed 622 chunks across 2 files
+Added 619 new chunks (3 already existed). Total chunks in database: 619
 
 # Search
 $ quickrag query gutenberg.rag "Who is Sherlock Holmes?"
@@ -137,8 +146,8 @@ Benchmarked on test corpus (2 files: sherlock-holmes.txt, frankenstein.txt):
 
 | Metric | Recursive Token | Simple |
 |--------|----------------|--------|
-| **Chunks Created** | 622 chunks | 1,718 chunks (2.76x more) |
-| **Indexing Time** | 45.1 seconds | 18.3 seconds (2.5x faster) |
+| **Chunks Created** | 622 chunks | 2,539 chunks (4.1x more) |
+| **Indexing Time** | ~19 seconds | ~37 seconds |
 | **Query Quality** | ✅ Better semantic matches, more context | ⚠️ More fragments, some irrelevant results |
 
 **Recommendation**: Use `recursive-token` for production. The indexing time difference is negligible compared to improved retrieval quality.

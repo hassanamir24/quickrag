@@ -38,7 +38,7 @@ const DEFAULT_CONFIG: QuickRAGConfig = {
     maxTextsPerBatch: 64,
     maxCharsPerBatch: 150000,
     maxTokensPerBatch: 20000,
-    maxConcurrentEmbeddings: 4,
+    maxConcurrentEmbeddings: 8,
   },
 };
 

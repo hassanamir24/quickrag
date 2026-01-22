@@ -140,7 +140,7 @@ export async function indexDirectory(
               await ctx.db.markFileIndexed(file.path, file.mtime);
             },
           })),
-          { concurrent: false, exitOnError: false }
+          { concurrent: 4, exitOnError: false }
         ),
     },
     {
