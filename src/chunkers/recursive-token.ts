@@ -133,7 +133,10 @@ export class RecursiveTokenChunker implements Chunker {
       const actualEnd = startChar + chunkText.length;
       const trimmedChunk = chunkText.trim();
       
-      if (trimmedChunk.length > 0) {
+      const minChunkTokens = options.minChunkSize ?? 50;
+      const trimmedTokens = estimateTokens(trimmedChunk);
+      
+      if (trimmedChunk.length > 0 && trimmedTokens >= minChunkTokens) {
         const startLine = getLineNumber(startChar) + 1;
         const endLine = getLineNumber(actualEnd - 1) + 1;
         
@@ -154,12 +157,43 @@ export class RecursiveTokenChunker implements Chunker {
       const chunkTokens = estimateTokens(chunkText);
       const overlapRatio = chunkOverlap > 0 ? Math.min(chunkOverlap / chunkTokens, 0.5) : 0;
       const overlapChars = Math.floor(chunkText.length * overlapRatio);
-      const nextStart = Math.max(startChar + 1, actualEnd - overlapChars);
+      let nextStart = Math.max(startChar + 1, actualEnd - overlapChars);
+      
+      if (nextStart < actualEnd) {
+        const searchStart = Math.max(startChar, nextStart - 200);
+        const searchText = text.slice(searchStart, actualEnd);
+        
+        const sentenceMatch = searchText.match(/[.!?]\s+/g);
+        if (sentenceMatch && sentenceMatch.length > 0) {
+          const lastMatch = sentenceMatch[sentenceMatch.length - 1];
+          const lastMatchIndex = searchText.lastIndexOf(lastMatch);
+          if (lastMatchIndex >= 0) {
+            const sentencePos = searchStart + lastMatchIndex + lastMatch.length;
+            if (sentencePos > startChar && sentencePos <= actualEnd) {
+              nextStart = sentencePos;
+            }
+          }
+        } else {
+          const wordBoundaryMatch = searchText.match(/\s+/g);
+          if (wordBoundaryMatch && wordBoundaryMatch.length > 0) {
+            const lastMatch = wordBoundaryMatch[wordBoundaryMatch.length - 1];
+            const lastMatchIndex = searchText.lastIndexOf(lastMatch);
+            if (lastMatchIndex >= 0) {
+              const wordPos = searchStart + lastMatchIndex + lastMatch.length;
+              if (wordPos > startChar && wordPos <= actualEnd) {
+                nextStart = wordPos;
+              }
+            }
+          }
+        }
+      }
       
       if (nextStart >= actualEnd) {
         startChar = actualEnd;
-      } else {
+      } else if (nextStart > startChar) {
         startChar = nextStart;
+      } else {
+        startChar = Math.min(startChar + 1, actualEnd);
       }
       
       if (startChar >= text.length) {

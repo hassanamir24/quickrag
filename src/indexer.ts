@@ -28,6 +28,9 @@ export async function indexDirectory(
   clear: boolean = false,
   config?: QuickRAGConfig
 ): Promise<void> {
+  if (config?.chunking?.minChunkSize !== undefined) {
+    chunkingOptions.minChunkSize = config.chunking.minChunkSize;
+  }
   const ctx: IndexContext = {
     chunkerType: config?.chunking?.strategy || "recursive-token",
     dimensions: 0,

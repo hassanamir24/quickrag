@@ -86,6 +86,7 @@ program
   .option("--chunker <type>", "Chunking strategy (recursive-token, simple)")
   .option("--chunk-size <number>", "Chunk size in tokens/characters")
   .option("--chunk-overlap <number>", "Chunk overlap in tokens/characters")
+  .option("--min-chunk-size <number>", "Minimum chunk size in tokens (default: 50)")
   .option("--clear", "Clear existing index before indexing (default: skip already indexed files)")
   .action(async (directory, options) => {
     const config = await loadConfig(options.config);
@@ -99,12 +100,21 @@ program
     const chunkOverlap = options.chunkOverlap 
       ? parseInt(String(options.chunkOverlap), 10) 
       : (config.chunking?.chunkOverlap || 50);
+    const minChunkSize = options.minChunkSize 
+      ? parseInt(String(options.minChunkSize), 10) 
+      : (config.chunking?.minChunkSize || 50);
     
     if (isNaN(chunkSize) || chunkSize <= 0) {
       throw new Error("chunk-size must be a positive number");
     }
     if (isNaN(chunkOverlap) || chunkOverlap < 0) {
       throw new Error("chunk-overlap must be a non-negative number");
+    }
+    if (isNaN(minChunkSize) || minChunkSize <= 0) {
+      throw new Error("min-chunk-size must be a positive number");
+    }
+    if (minChunkSize >= chunkSize) {
+      throw new Error("min-chunk-size must be less than chunk-size");
     }
     
     // Update config with chunker type if provided
@@ -123,7 +133,7 @@ program
       directory, 
       options.output, 
       embeddingProvider,
-      { chunkSize, chunkOverlap },
+      { chunkSize, chunkOverlap, minChunkSize },
       options.clear || false,
       config
     );

@@ -90,6 +90,7 @@ chunking:
   strategy: recursive-token
   chunkSize: 500
   chunkOverlap: 50
+  minChunkSize: 50
 ```
 
 ### 2. Configure Settings
@@ -104,6 +105,7 @@ chunking:
   strategy: recursive-token
   chunkSize: 500
   chunkOverlap: 50
+  minChunkSize: 50
 ```
 
 ### 3. Index Documents
@@ -129,6 +131,7 @@ quickrag query my-docs.rag "What is the main topic?"
 - `chunking.strategy`: `recursive-token` (default) or `simple`
 - `chunking.chunkSize`: Tokens (for `recursive-token`, default: 500) or characters (for `simple`, default: 1000)
 - `chunking.chunkOverlap`: Tokens (for `recursive-token`, default: 50) or characters (for `simple`, default: 200)
+- `chunking.minChunkSize`: Minimum chunk size in tokens (default: 50). Chunks smaller than this are filtered out to prevent tiny fragments.
 
 ## Chunking Strategies
 
@@ -183,7 +186,7 @@ Benchmarked on test corpus (2 files: sherlock-holmes.txt, frankenstein.txt):
 quickrag index ./documents --output my-docs.rag
 
 # Override chunking parameters
-quickrag index ./documents --chunker recursive-token --chunk-size 500 --chunk-overlap 50 --output my-docs.rag
+quickrag index ./documents --chunker recursive-token --chunk-size 500 --chunk-overlap 50 --min-chunk-size 50 --output my-docs.rag
 
 # Use different provider
 quickrag index ./documents --provider openai --model text-embedding-3-small --output my-docs.rag

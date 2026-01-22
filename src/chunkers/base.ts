@@ -10,6 +10,7 @@ export interface DocumentChunk {
 export interface ChunkerOptions {
   chunkSize: number;
   chunkOverlap: number;
+  minChunkSize?: number;
 }
 
 export interface Chunker {

@@ -1,4 +1,5 @@
 import type { Chunker, ChunkerOptions, DocumentChunk } from "./base.js";
+import { estimateTokens } from "../utils/tokens.js";
 
 export class SimpleChunker implements Chunker {
   chunk(text: string, filePath: string, options: ChunkerOptions): DocumentChunk[] {
@@ -69,7 +70,10 @@ export class SimpleChunker implements Chunker {
       }
       
       const trimmedChunk = chunkText.trim();
-      if (trimmedChunk.length > 0) {
+      const minChunkTokens = options.minChunkSize ?? 50;
+      const trimmedTokens = estimateTokens(trimmedChunk);
+      
+      if (trimmedChunk.length > 0 && trimmedTokens >= minChunkTokens) {
         const startLine = getLineNumber(startChar) + 1;
         const endLine = getLineNumber(actualEnd - 1) + 1;
         

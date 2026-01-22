@@ -13,6 +13,7 @@ export interface QuickRAGConfig {
     strategy?: "recursive-token" | "simple";
     chunkSize?: number;
     chunkOverlap?: number;
+    minChunkSize?: number;
   };
   batching?: {
     maxTextsPerBatch?: number;
@@ -33,6 +34,7 @@ const DEFAULT_CONFIG: QuickRAGConfig = {
     strategy: "recursive-token",
     chunkSize: 500,
     chunkOverlap: 50,
+    minChunkSize: 50,
   },
   batching: {
     maxTextsPerBatch: 64,
@@ -86,6 +88,7 @@ export async function createDefaultConfig(): Promise<void> {
   logger.info("  - chunking.strategy: Chunking strategy - recursive-token or simple (default: recursive-token)");
   logger.info("  - chunking.chunkSize: Size of text chunks in tokens/characters (default: 500)");
   logger.info("  - chunking.chunkOverlap: Overlap between chunks in tokens/characters (default: 50)");
+  logger.info("  - chunking.minChunkSize: Minimum chunk size in tokens (default: 50)");
   logger.info("  - batching.maxTextsPerBatch: Maximum texts per embedding batch (default: 64)");
   logger.info("  - batching.maxCharsPerBatch: Maximum characters per batch (default: 150000)");
   logger.info("  - batching.maxTokensPerBatch: Maximum tokens per batch (default: 20000)");

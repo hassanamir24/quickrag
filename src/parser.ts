@@ -21,6 +21,14 @@ function validateChunkingOptions(options: ChunkerOptions): void {
   if (options.chunkOverlap >= options.chunkSize) {
     throw new Error("chunkOverlap must be less than chunkSize");
   }
+  if (options.minChunkSize !== undefined) {
+    if (options.minChunkSize <= 0) {
+      throw new Error("minChunkSize must be greater than 0");
+    }
+    if (options.minChunkSize >= options.chunkSize) {
+      throw new Error("minChunkSize must be less than chunkSize");
+    }
+  }
 }
 
 const SUPPORTED_EXTENSIONS = [".txt", ".md", ".markdown"];
