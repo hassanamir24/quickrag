@@ -5,6 +5,9 @@ import type { EmbeddingProvider } from "./embeddings/base.js";
 import type { QuickRAGConfig } from "./config.js";
 import { ConcurrencyLimiter } from "./utils/concurrency.js";
 import { estimateTokens } from "./utils/tokens.js";
+import { logger } from "./utils/logger.js";
+import cliProgress from "cli-progress";
+import ora from "ora";
 
 export interface IndexedChunk {
   id: string;
@@ -72,9 +75,8 @@ export class RAGDatabase {
         throw error;
       }
       
-      // Split batch in half and retry (adaptive splitting like YAMS)
       const mid = Math.floor(texts.length / 2);
-      console.log(`  Batch failed, splitting into ${mid} and ${texts.length - mid} chunks and retrying...`);
+      logger.warn(`Batch failed, splitting into ${mid} and ${texts.length - mid} chunks and retrying...`);
       
       const left = await this.embedWithRetry(
         texts.slice(0, mid),
@@ -206,7 +208,7 @@ export class RAGDatabase {
       throw new Error("Database not initialized. Call initialize() first.");
     }
     if (chunks.length === 0) {
-      console.log("No chunks to index.");
+      logger.warn("No chunks to index.");
       return;
     }
 
@@ -225,11 +227,11 @@ export class RAGDatabase {
     }
 
     if (chunksToIndex.length === 0) {
-      console.log(`All ${chunks.length} chunks already exist in database (skipped).`);
+      logger.info(`All ${chunks.length} chunks already exist in database (skipped).`);
       return;
     }
 
-    console.log(`Indexing ${chunksToIndex.length} new chunks (${skippedCount} already exist)...`);
+    logger.info(`Indexing ${chunksToIndex.length} new chunks (${skippedCount} already exist)...`);
     
     // Generate embeddings in batches with improved sizing
     // Token-aware batching: estimate tokens instead of just characters
@@ -289,25 +291,36 @@ export class RAGDatabase {
     
     totalBatches = batches.length;
     
-    // Process batches with concurrency control, maintaining order
+    const batchProgressBar = new cliProgress.SingleBar({
+      format: "Embedding batches |{bar}| {percentage}% | {value}/{total} batches | ETA: {eta}s | {chunks} chunks",
+      barCompleteChar: "\u2588",
+      barIncompleteChar: "\u2591",
+      hideCursor: true,
+    }, cliProgress.Presets.shades_classic);
+    
+    batchProgressBar.start(totalBatches, 0, { chunks: 0 });
+    
     const batchResults: Array<{ batchInfo: BatchInfo; embeddings: number[][] }> = [];
+    let completedBatches = 0;
+    
     const batchPromises = batches.map((batchInfo) => {
       const texts = batchInfo.batch.map((chunk) => chunk.text);
       
       return this.concurrencyLimiter.execute(async () => {
         try {
-          console.log(`Embedding batch ${batchInfo.batchNum}/${totalBatches} (${batchInfo.batch.length} chunks, ~${batchInfo.batchTokenCount} tokens)...`);
           const embeddings = await this.embedWithRetry(texts, embeddingProvider, 3);
           batchResults.push({ batchInfo, embeddings });
+          completedBatches++;
+          batchProgressBar.update(completedBatches, { chunks: batchInfo.batch.length });
         } catch (error) {
-          console.error(`  Error in batch ${batchInfo.batchNum}: ${error instanceof Error ? error.message : String(error)}`);
+          logger.error(`Error in batch ${batchInfo.batchNum}: ${error instanceof Error ? error.message : String(error)}`);
           throw error;
         }
       });
     });
     
-    // Wait for all batches to complete
     await Promise.all(batchPromises);
+    batchProgressBar.stop();
     
     // Sort results by batch number to maintain order
     batchResults.sort((a, b) => a.batchInfo.batchNum - b.batchInfo.batchNum);
@@ -331,10 +344,9 @@ export class RAGDatabase {
       }
     }
     
-    // Create table if it doesn't exist, or add to existing table
+    const dbSpinner = ora("Writing to database...").start();
+    
     if (!this.table) {
-      console.log("Creating new table with first batch...");
-      // LanceDB accepts arrays of objects - ensure proper structure
       const tableData = indexedChunks.map(chunk => ({
         id: chunk.id,
         text: chunk.text,
@@ -347,8 +359,8 @@ export class RAGDatabase {
         hash: chunk.hash,
       }));
       this.table = await this.db.createTable("documents", tableData);
+      dbSpinner.succeed("Created new table");
     } else {
-      console.log("Inserting into database...");
       const tableData = indexedChunks.map(chunk => ({
         id: chunk.id,
         text: chunk.text,
@@ -361,9 +373,10 @@ export class RAGDatabase {
         hash: chunk.hash,
       }));
       await this.table.add(tableData);
+      dbSpinner.succeed("Inserted into database");
     }
     
-    console.log(`Successfully indexed ${indexedChunks.length} new chunks.`);
+    logger.success(`Successfully indexed ${indexedChunks.length} new chunks`);
   }
 
   async search(

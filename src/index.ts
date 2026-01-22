@@ -9,6 +9,7 @@ import { OllamaEmbeddingProvider } from "./embeddings/ollama.js";
 import { loadConfig, createDefaultConfig, type QuickRAGConfig } from "./config.js";
 import type { EmbeddingProvider } from "./embeddings/base.js";
 import type { ChunkerType } from "./chunkers/index.js";
+import { logger } from "./utils/logger.js";
 
 interface EmbeddingOptions {
   provider: "openai" | "voyageai" | "ollama";
@@ -158,7 +159,7 @@ program
       topK
     );
     
-    console.log(formatResults(results));
+    logger.log(formatResults(results));
   });
 
 program
@@ -183,7 +184,7 @@ program
       embeddingOpts.baseUrl
     );
     
-    console.log("Interactive mode. Type 'exit' or 'quit' to exit.\n");
+    logger.info("Interactive mode. Type 'exit' or 'quit' to exit.\n");
     
     const readline = await import("readline");
     const rl = readline.createInterface({
@@ -207,9 +208,9 @@ program
               embeddingProvider,
               topK
             );
-            console.log("\n" + formatResults(results) + "\n");
+            logger.log("\n" + formatResults(results) + "\n");
           } catch (error) {
-            console.error("Error:", error instanceof Error ? error.message : String(error));
+            logger.error("Error:", error instanceof Error ? error.message : String(error));
           }
         }
         

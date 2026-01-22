@@ -2,6 +2,7 @@ import { readFile, mkdir, writeFile } from "fs/promises";
 import { join } from "path";
 import { homedir } from "os";
 import yaml from "js-yaml";
+import { logger } from "./utils/logger.js";
 
 export interface QuickRAGConfig {
   provider?: "openai" | "voyageai" | "ollama";
@@ -76,17 +77,17 @@ export async function saveConfig(config: QuickRAGConfig): Promise<void> {
 
 export async function createDefaultConfig(): Promise<void> {
   await saveConfig(DEFAULT_CONFIG);
-  console.log(`Created default config at: ${CONFIG_FILE}`);
-  console.log("\nYou can edit this file to customize your settings:");
-  console.log("  - provider: openai, voyageai, or ollama");
-  console.log("  - apiKey: Your API key (or set via environment variables)");
-  console.log("  - model: Model name for the embedding provider");
-  console.log("  - baseUrl: Base URL for Ollama (default: http://localhost:11434)");
-  console.log("  - chunking.strategy: Chunking strategy - recursive-token or simple (default: recursive-token)");
-  console.log("  - chunking.chunkSize: Size of text chunks in tokens/characters (default: 500)");
-  console.log("  - chunking.chunkOverlap: Overlap between chunks in tokens/characters (default: 50)");
-  console.log("  - batching.maxTextsPerBatch: Maximum texts per embedding batch (default: 64)");
-  console.log("  - batching.maxCharsPerBatch: Maximum characters per batch (default: 150000)");
-  console.log("  - batching.maxTokensPerBatch: Maximum tokens per batch (default: 20000)");
-  console.log("  - batching.maxConcurrentEmbeddings: Max concurrent embedding requests (default: 4)");
+  logger.success(`Created default config at: ${CONFIG_FILE}`);
+  logger.info("\nYou can edit this file to customize your settings:");
+  logger.info("  - provider: openai, voyageai, or ollama");
+  logger.info("  - apiKey: Your API key (or set via environment variables)");
+  logger.info("  - model: Model name for the embedding provider");
+  logger.info("  - baseUrl: Base URL for Ollama (default: http://localhost:11434)");
+  logger.info("  - chunking.strategy: Chunking strategy - recursive-token or simple (default: recursive-token)");
+  logger.info("  - chunking.chunkSize: Size of text chunks in tokens/characters (default: 500)");
+  logger.info("  - chunking.chunkOverlap: Overlap between chunks in tokens/characters (default: 50)");
+  logger.info("  - batching.maxTextsPerBatch: Maximum texts per embedding batch (default: 64)");
+  logger.info("  - batching.maxCharsPerBatch: Maximum characters per batch (default: 150000)");
+  logger.info("  - batching.maxTokensPerBatch: Maximum tokens per batch (default: 20000)");
+  logger.info("  - batching.maxConcurrentEmbeddings: Max concurrent embedding requests (default: 4)");
 }

@@ -1,4 +1,5 @@
 import type { EmbeddingProvider } from "./base.js";
+import { logger } from "../utils/logger.js";
 
 function sanitizeUTF8(text: string): string {
   const encoder = new TextEncoder();
@@ -175,14 +176,14 @@ export class VoyageAIEmbeddingProvider implements EmbeddingProvider {
       }
       
       if (errorMessage.includes("UTF-8") && texts.length > 1) {
-        console.warn(`Batch failed due to UTF-8 encoding issue, retrying texts individually...`);
+        logger.warn(`Batch failed due to UTF-8 encoding issue, retrying texts individually...`);
         const individualEmbeddings: number[][] = [];
         for (let i = 0; i < texts.length; i++) {
           try {
             const singleEmbedding = await this.embedBatch([texts[i]]);
             individualEmbeddings.push(singleEmbedding[0]);
           } catch (singleError) {
-            console.warn(`Failed to embed text at index ${i}, using zero vector: ${singleError instanceof Error ? singleError.message : String(singleError)}`);
+            logger.warn(`Failed to embed text at index ${i}, using zero vector: ${singleError instanceof Error ? singleError.message : String(singleError)}`);
             const dims = this.dimensionsInitialized ? this.dimensions : 1024;
             individualEmbeddings.push(new Array(dims).fill(0));
           }

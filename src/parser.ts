@@ -2,6 +2,7 @@ import { readdir, readFile, stat } from "fs/promises";
 import { join, extname } from "path";
 import type { Chunker, ChunkerOptions, DocumentChunk } from "./chunkers/index.js";
 import { createChunker, type ChunkerType } from "./chunkers/index.js";
+import { logger } from "./utils/logger.js";
 
 export interface FileInfo {
   path: string;
@@ -44,7 +45,7 @@ export async function parseDirectory(
         const fileChunks = await parseFile(filePath, options, chunker);
         chunks.push(...fileChunks);
       } catch (error) {
-        console.warn(`Skipping file ${filePath}: ${error instanceof Error ? error.message : String(error)}`);
+        logger.warn(`Skipping file ${filePath}: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
   }
