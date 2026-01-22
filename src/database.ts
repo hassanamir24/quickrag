@@ -2,6 +2,8 @@ import * as lancedb from "@lancedb/lancedb";
 import { createHash } from "crypto";
 import type { DocumentChunk } from "./parser.js";
 import type { EmbeddingProvider } from "./embeddings/base.js";
+import { ConcurrencyLimiter } from "./utils/concurrency.js";
+import { estimateTokens } from "./utils/tokens.js";
 
 export interface IndexedChunk {
   id: string;
@@ -21,10 +23,17 @@ export class RAGDatabase {
   private fileIndexTable: lancedb.Table | null = null;
   private dimensions: number;
   private db: Awaited<ReturnType<typeof lancedb.connect>> | null = null;
+  private concurrencyLimiter: ConcurrencyLimiter;
 
-  constructor(dbPath: string, dimensions: number) {
+  constructor(dbPath: string, dimensions: number, maxConcurrentEmbeddings?: number) {
     this.dbPath = dbPath;
     this.dimensions = dimensions;
+    // Allow configuration via environment variable (like YAMS)
+    const defaultConcurrency = maxConcurrentEmbeddings ?? 
+      (process.env.QUICKRAG_MAX_CONCURRENT_EMBEDDINGS 
+        ? parseInt(process.env.QUICKRAG_MAX_CONCURRENT_EMBEDDINGS, 10) 
+        : 4);
+    this.concurrencyLimiter = new ConcurrencyLimiter(defaultConcurrency);
   }
 
   getDimensions(): number {
@@ -33,6 +42,37 @@ export class RAGDatabase {
 
   private computeChunkHash(text: string): string {
     return createHash("sha256").update(text).digest("hex");
+  }
+
+  private async embedWithRetry(
+    texts: string[],
+    embeddingProvider: EmbeddingProvider,
+    maxRetries: number
+  ): Promise<number[][]> {
+    try {
+      return await embeddingProvider.embedBatch(texts);
+    } catch (error) {
+      if (maxRetries === 0 || texts.length <= 1) {
+        throw error;
+      }
+      
+      // Split batch in half and retry (adaptive splitting like YAMS)
+      const mid = Math.floor(texts.length / 2);
+      console.log(`  Batch failed, splitting into ${mid} and ${texts.length - mid} chunks and retrying...`);
+      
+      const left = await this.embedWithRetry(
+        texts.slice(0, mid),
+        embeddingProvider,
+        maxRetries - 1
+      );
+      const right = await this.embedWithRetry(
+        texts.slice(mid),
+        embeddingProvider,
+        maxRetries - 1
+      );
+      
+      return [...left, ...right];
+    }
   }
 
   async getExistingChunkHashes(): Promise<Set<string>> {
@@ -175,33 +215,55 @@ export class RAGDatabase {
 
     console.log(`Indexing ${chunksToIndex.length} new chunks (${skippedCount} already exist)...`);
     
-    // Generate embeddings in batches
-    // Use character-count-based batching to respect API limits
-    // Limit: ~30K characters per batch (conservative estimate for token limits)
-    // VoyageAI has token limits: 120K tokens for voyage-3-large, etc.
-    // Rough estimate: 1 token ≈ 4 characters, so 30K chars ≈ 7.5K tokens (very conservative)
-    const maxCharsPerBatch = 30000;
-    const maxTextsPerBatch = 4;
+    // Generate embeddings in batches with improved sizing
+    // Token-aware batching: estimate tokens instead of just characters
+    // Increased batch sizes: 32-64 texts, ~150K chars (conservative for API limits)
+    // Most models support 8K-32K tokens per request, we target ~20K tokens per batch
+    // Allow configuration via environment variables (like YAMS)
+    const maxTokensPerBatch = process.env.QUICKRAG_MAX_TOKENS_PER_BATCH 
+      ? parseInt(process.env.QUICKRAG_MAX_TOKENS_PER_BATCH, 10) 
+      : 20000;
+    const maxTextsPerBatch = process.env.QUICKRAG_MAX_TEXTS_PER_BATCH 
+      ? parseInt(process.env.QUICKRAG_MAX_TEXTS_PER_BATCH, 10) 
+      : 64;
+    const maxCharsPerBatch = process.env.QUICKRAG_MAX_CHARS_PER_BATCH 
+      ? parseInt(process.env.QUICKRAG_MAX_CHARS_PER_BATCH, 10) 
+      : 150000;
     const indexedChunks: IndexedChunk[] = [];
     
     // Calculate total batches for accurate progress reporting
-    const totalChars = chunksToIndex.reduce((sum, chunk) => sum + chunk.text.length, 0);
-    const estimatedBatchesByChars = Math.ceil(totalChars / maxCharsPerBatch);
+    const totalTokens = chunksToIndex.reduce((sum, chunk) => sum + estimateTokens(chunk.text), 0);
+    const estimatedBatchesByTokens = Math.ceil(totalTokens / maxTokensPerBatch);
     const estimatedBatchesByCount = Math.ceil(chunksToIndex.length / maxTextsPerBatch);
-    let totalBatches = Math.max(estimatedBatchesByChars, estimatedBatchesByCount, 1);
+    let totalBatches = Math.max(estimatedBatchesByTokens, estimatedBatchesByCount, 1);
     
     let batchNum = 0;
     let i = 0;
+    
+    // First, collect all batches with their metadata
+    interface BatchInfo {
+      batch: typeof chunksToIndex;
+      batchNum: number;
+      batchTokenCount: number;
+    }
+    const batches: BatchInfo[] = [];
+    
     while (i < chunksToIndex.length) {
       const batch: typeof chunksToIndex = [];
+      let batchTokenCount = 0;
       let batchCharCount = 0;
       
       while (i < chunksToIndex.length && batch.length < maxTextsPerBatch) {
         const chunk = chunksToIndex[i];
+        const chunkTokens = estimateTokens(chunk.text);
         const chunkChars = chunk.text.length;
         
-        if (batch.length === 0 || (batchCharCount + chunkChars <= maxCharsPerBatch)) {
+        // Check both token and character limits
+        if (batch.length === 0 || 
+            (batchTokenCount + chunkTokens <= maxTokensPerBatch && 
+             batchCharCount + chunkChars <= maxCharsPerBatch)) {
           batch.push(chunk);
+          batchTokenCount += chunkTokens;
           batchCharCount += chunkChars;
           i++;
         } else {
@@ -210,19 +272,42 @@ export class RAGDatabase {
       }
       
       if (batch.length === 0) {
-        throw new Error(`Chunk at index ${i} is too large (${chunksToIndex[i].text.length} chars) for batch limit (${maxCharsPerBatch} chars)`);
+        throw new Error(`Chunk at index ${i} is too large (${chunksToIndex[i].text.length} chars, ${estimateTokens(chunksToIndex[i].text)} tokens) for batch limits`);
       }
       
-      const texts = batch.map((chunk) => chunk.text);
       batchNum++;
-      if (batchNum > totalBatches) {
-        totalBatches = batchNum;
-      }
-      console.log(`Embedding batch ${batchNum}/${totalBatches}...`);
-      const embeddings = await embeddingProvider.embedBatch(texts);
+      batches.push({ batch, batchNum, batchTokenCount });
+    }
+    
+    totalBatches = batches.length;
+    
+    // Process batches with concurrency control, maintaining order
+    const batchResults: Array<{ batchInfo: BatchInfo; embeddings: number[][] }> = [];
+    const batchPromises = batches.map((batchInfo) => {
+      const texts = batchInfo.batch.map((chunk) => chunk.text);
       
-      for (let j = 0; j < batch.length; j++) {
-        const chunk = batch[j];
+      return this.concurrencyLimiter.execute(async () => {
+        try {
+          console.log(`Embedding batch ${batchInfo.batchNum}/${totalBatches} (${batchInfo.batch.length} chunks, ~${batchInfo.batchTokenCount} tokens)...`);
+          const embeddings = await this.embedWithRetry(texts, embeddingProvider, 3);
+          batchResults.push({ batchInfo, embeddings });
+        } catch (error) {
+          console.error(`  Error in batch ${batchInfo.batchNum}: ${error instanceof Error ? error.message : String(error)}`);
+          throw error;
+        }
+      });
+    });
+    
+    // Wait for all batches to complete
+    await Promise.all(batchPromises);
+    
+    // Sort results by batch number to maintain order
+    batchResults.sort((a, b) => a.batchInfo.batchNum - b.batchInfo.batchNum);
+    
+    // Combine all results in order
+    for (const { batchInfo, embeddings } of batchResults) {
+      for (let j = 0; j < batchInfo.batch.length; j++) {
+        const chunk = batchInfo.batch[j];
         const id = `${chunk.filePath}:${chunk.startLine}:${chunk.endLine}`;
         indexedChunks.push({
           id,

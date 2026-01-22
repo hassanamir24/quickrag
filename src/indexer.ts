@@ -56,12 +56,12 @@ export async function indexDirectory(
   
   console.log(`Found ${filesToIndex.length} file(s) to index (${files.length - filesToIndex.length} already indexed)`);
   
-  let totalChunks = 0;
-  let totalNewChunks = 0;
+  // Collect all chunks from all files first (cross-file batching like YAMS)
+  console.log("Collecting chunks from all files...");
+  const allChunksToIndex: Array<{ chunk: DocumentChunk; filePath: string; mtime: number }> = [];
+  
   for (const file of filesToIndex) {
     try {
-      console.log(`Indexing ${file.path}...`);
-      
       // Don't remove file chunks upfront - let deduplication handle it
       // Only remove from file index if we're re-indexing
       if (!clear) {
@@ -80,37 +80,54 @@ export async function indexDirectory(
       
       const fileChunks = chunkText(content, file.path, chunkingOptions);
       
-      if (fileChunks.length > 0) {
-        // Get count before indexing to see how many are new
-        let statsBefore = { count: 0 };
-        try {
-          statsBefore = await db.getStats();
-        } catch {
-          // Table might not exist yet, that's okay
-        }
-        
-        await db.indexChunks(fileChunks, embeddingProvider);
-        
-        let statsAfter = { count: 0 };
-        try {
-          statsAfter = await db.getStats();
-        } catch {
-          // Table might not exist, that's okay
-        }
-        
-        const newChunks = statsAfter.count - statsBefore.count;
-        
-        await db.markFileIndexed(file.path, file.mtime);
-        totalChunks += fileChunks.length;
-        totalNewChunks += newChunks;
-        console.log(`  Processed ${fileChunks.length} chunks from ${file.path} (${newChunks} new, ${fileChunks.length - newChunks} already existed)`);
-      } else {
-        console.log(`  No chunks generated from ${file.path} (file may be empty)`);
+      for (const chunk of fileChunks) {
+        allChunksToIndex.push({ chunk, filePath: file.path, mtime: file.mtime });
       }
+      
+      console.log(`  Collected ${fileChunks.length} chunks from ${file.path}`);
     } catch (error) {
-      console.error(`  Error indexing ${file.path}: ${error instanceof Error ? error.message : String(error)}`);
+      console.error(`  Error reading ${file.path}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
+  
+  if (allChunksToIndex.length === 0) {
+    console.log("No chunks to index.");
+    return;
+  }
+  
+  // Process all chunks together (cross-file batching)
+  console.log(`\nProcessing ${allChunksToIndex.length} chunks across ${filesToIndex.length} files...`);
+  
+  let statsBefore = { count: 0 };
+  try {
+    statsBefore = await db.getStats();
+  } catch {
+    // Table might not exist yet, that's okay
+  }
+  
+  const chunksToIndex = allChunksToIndex.map(item => item.chunk);
+  await db.indexChunks(chunksToIndex, embeddingProvider);
+  
+  let statsAfter = { count: 0 };
+  try {
+    statsAfter = await db.getStats();
+  } catch {
+    // Table might not exist, that's okay
+  }
+  
+  const totalNewChunks = statsAfter.count - statsBefore.count;
+  
+  // Mark all files as indexed
+  for (const file of filesToIndex) {
+    try {
+      await db.markFileIndexed(file.path, file.mtime);
+    } catch (error) {
+      console.warn(`  Warning: Could not mark ${file.path} as indexed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+  
+  const totalChunks = allChunksToIndex.length;
+  const skippedChunks = totalChunks - totalNewChunks;
   
   let stats = { count: 0 };
   try {
@@ -118,5 +135,5 @@ export async function indexDirectory(
   } catch {
     // Table might not exist, that's okay
   }
-  console.log(`\nIndexing complete! Processed ${totalChunks} chunks, added ${totalNewChunks} new chunks. Total chunks in database: ${stats.count}`);
+  console.log(`\nIndexing complete! Processed ${totalChunks} chunks across ${filesToIndex.length} files, added ${totalNewChunks} new chunks (${skippedChunks} already existed). Total chunks in database: ${stats.count}`);
 }
