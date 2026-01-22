@@ -519,7 +519,7 @@ export class RAGDatabase {
     
     try {
       const escapedPath = filePath.replace(/'/g, "''");
-      await this.fileIndexTable.delete(`filePath = '${escapedPath}'`);
+      await this.fileIndexTable.delete(`"filePath" = '${escapedPath}'`);
     } catch (error) {
       logger.debug(`Failed to remove file from index ${filePath}: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -534,7 +534,7 @@ export class RAGDatabase {
       const escapedPath = filePath.replace(/'/g, "''");
       const results = await this.fileIndexTable
         .query()
-        .where(`filePath = '${escapedPath}'`)
+        .where(`"filePath" = '${escapedPath}'`)
         .toArray();
       
       if (results.length === 0) {
@@ -550,15 +550,60 @@ export class RAGDatabase {
   }
 
   async removeFileChunks(filePath: string): Promise<void> {
-    if (!this.table) {
+    if (!this.table || !this.db) {
       return;
     }
     
     try {
-      const escapedPath = filePath.replace(/'/g, "''");
-      await this.table.delete(`filePath = '${escapedPath}'`);
+      const beforeCount = await this.table.countRows();
+      
+      // LanceDB delete with filter doesn't work reliably, so we use a workaround:
+      // get all rows, filter in memory, recreate table
+      const allRows = await this.table.query().toArray();
+      const rowsToKeep = allRows.filter((row: Record<string, unknown>) => {
+        const rowPath = String(row.filePath || '');
+        return rowPath !== filePath;
+      });
+      
+      const deletedCount = allRows.length - rowsToKeep.length;
+      
+      if (deletedCount === 0) {
+        return;
+      }
+      
+      logger.info(`Removing ${deletedCount} chunks for ${filePath}`);
+      
+      // Recreate table with remaining rows
+      // Need to ensure vector is in the right format (array of numbers)
+      const tableData = rowsToKeep.map((row: Record<string, unknown>) => {
+        let vector = row.vector;
+        if (Array.isArray(vector)) {
+          vector = vector as number[];
+        } else if (vector && typeof vector === 'object' && 'length' in vector) {
+          vector = Array.from(vector as ArrayLike<number>);
+        }
+        
+        return {
+          id: row.id,
+          text: row.text,
+          filePath: row.filePath,
+          startLine: row.startLine,
+          endLine: row.endLine,
+          startChar: row.startChar,
+          endChar: row.endChar,
+          vector: vector,
+          hash: row.hash,
+        };
+      });
+      
+      await this.db.dropTable("documents");
+      this.table = await this.db.createTable("documents", tableData);
+      
+      const afterCount = await this.table.countRows();
+      logger.info(`Deleted ${deletedCount} chunks for ${filePath} (before: ${beforeCount}, after: ${afterCount})`);
     } catch (error) {
-      logger.debug(`Failed to remove chunks for ${filePath}: ${error instanceof Error ? error.message : String(error)}`);
+      logger.warn(`Failed to remove chunks for ${filePath}: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
     }
   }
 }

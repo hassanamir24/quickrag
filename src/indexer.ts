@@ -13,10 +13,12 @@ interface IndexContext {
   db: RAGDatabase;
   allFiles: FileInfo[];
   filesToIndex: FileInfo[];
+  deletedFiles: string[];
   existingHashes: Set<string>;
   chunker: ReturnType<typeof createChunker>;
   totalIndexed: number;
   totalSkipped: number;
+  totalDeleted: number;
   stats: { count: number };
 }
 
@@ -37,10 +39,12 @@ export async function indexDirectory(
     db: null as any,
     allFiles: [],
     filesToIndex: [],
+    deletedFiles: [],
     existingHashes: new Set(),
     chunker: null as any,
     totalIndexed: 0,
     totalSkipped: 0,
+    totalDeleted: 0,
     stats: { count: 0 },
   };
 
@@ -80,19 +84,50 @@ export async function indexDirectory(
       title: "Finding files to index",
       task: async (ctx) => {
         const indexedFiles = await ctx.db.getIndexedFiles();
+        const currentFilePaths = new Set(ctx.allFiles.map(f => f.path));
+        
         for (const file of ctx.allFiles) {
           if (clear || !indexedFiles.has(file.path) || !(await ctx.db.isFileIndexed(file.path, file.mtime))) {
             ctx.filesToIndex.push(file);
           }
         }
-        if (ctx.filesToIndex.length === 0) {
+        
+        if (!clear) {
+          for (const indexedPath of indexedFiles) {
+            if (!currentFilePaths.has(indexedPath)) {
+              ctx.deletedFiles.push(indexedPath);
+            }
+          }
+        }
+        
+        if (ctx.filesToIndex.length === 0 && ctx.deletedFiles.length === 0) {
           ctx.stats = await ctx.db.getStats();
           throw new Error("All files are already indexed and up to date.");
         }
       },
     },
     {
+      title: "Removing deleted files from index",
+      enabled: (ctx) => ctx.deletedFiles.length > 0,
+      task: async (ctx, task) => {
+        if (task && ctx.deletedFiles.length > 0) {
+          task.title = `Removing ${ctx.deletedFiles.length} deleted file${ctx.deletedFiles.length !== 1 ? 's' : ''} from index...`;
+        }
+        
+        for (const deletedPath of ctx.deletedFiles) {
+          await ctx.db.removeFileChunks(deletedPath);
+          await ctx.db.removeFileFromIndex(deletedPath);
+          ctx.totalDeleted++;
+        }
+        
+        if (task && ctx.deletedFiles.length > 0) {
+          task.title = `Removed ${ctx.deletedFiles.length} deleted file${ctx.deletedFiles.length !== 1 ? 's' : ''} from index`;
+        }
+      },
+    },
+    {
       title: "Preparing for indexing",
+      enabled: (ctx) => ctx.filesToIndex.length > 0,
       task: async (ctx) => {
         ctx.existingHashes = await ctx.db.getExistingChunkHashes();
         ctx.chunker = createChunker(ctx.chunkerType);
@@ -100,6 +135,7 @@ export async function indexDirectory(
     },
     {
       title: "Indexing files",
+      enabled: (ctx) => ctx.filesToIndex.length > 0,
       task: (ctx, task) =>
         task.newListr(
           ctx.filesToIndex.map((file) => ({
@@ -160,12 +196,22 @@ export async function indexDirectory(
 
   try {
     await tasks.run(ctx);
-    logger.info(
-      `Indexing complete! Processed ${ctx.totalIndexed + ctx.totalSkipped} chunks across ${ctx.filesToIndex.length} files`
-    );
-    logger.info(
-      `Added ${ctx.totalIndexed} new chunks (${ctx.totalSkipped} already existed). Total chunks in database: ${ctx.stats.count}`
-    );
+    const deletedMsg = ctx.totalDeleted > 0
+      ? ` Removed ${ctx.totalDeleted} deleted file${ctx.totalDeleted !== 1 ? 's' : ''}.`
+      : "";
+    
+    if (ctx.filesToIndex.length > 0) {
+      logger.info(
+        `Indexing complete! Processed ${ctx.totalIndexed + ctx.totalSkipped} chunks across ${ctx.filesToIndex.length} file${ctx.filesToIndex.length !== 1 ? 's' : ''}.${deletedMsg}`
+      );
+      logger.info(
+        `Added ${ctx.totalIndexed} new chunks (${ctx.totalSkipped} already existed). Total chunks in database: ${ctx.stats.count}`
+      );
+    } else if (ctx.totalDeleted > 0) {
+      logger.info(
+        `Indexing complete!${deletedMsg} Total chunks in database: ${ctx.stats.count}`
+      );
+    }
   } catch (error) {
     if (error instanceof Error && error.message === "All files are already indexed and up to date.") {
       logger.info("All files are already indexed and up to date.");

@@ -18,10 +18,11 @@ $ quickrag index gutenberg/ --output gutenberg.rag
 ✔ Detecting embedding dimensions
 ✔ Initializing database
 ✔ Finding files to index
+✔ Removing deleted files from index
 ✔ Preparing for indexing
 ✔ Indexing files
 ✔ Finalizing
-Indexing complete! Processed 622 chunks across 2 files
+Indexing complete! Processed 622 chunks across 2 files. Removed 1 deleted file.
 Added 619 new chunks (3 already existed). Total chunks in database: 619
 
 # Search
@@ -34,6 +35,7 @@ $ quickrag query gutenberg.rag "Who is Sherlock Holmes?"
 - Token-based recursive chunking (default) or character-based chunking
 - LanceDB vector storage with persistent `.rag` files
 - Idempotent indexing (tracks indexed files, skips unchanged)
+- Automatic cleanup of deleted files from index
 - UTF-8 sanitization for PDF conversions
 - TypeScript & Bun
 
@@ -194,6 +196,8 @@ quickrag index ./documents --provider openai --model text-embedding-3-small --ou
 # Clear existing index
 quickrag index ./documents --clear --output my-docs.rag
 ```
+
+**Note**: QuickRAG automatically detects and removes deleted files from the index. If a file was previously indexed but no longer exists in the source directory, it will be removed from the database during the next indexing run.
 
 ### Querying
 
