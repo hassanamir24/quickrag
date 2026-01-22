@@ -122,12 +122,8 @@ jobs:
         run: |
           set -euo pipefail
           VERSION="${{ steps.version.outputs.version }}"
+          TAG="${{ steps.version.outputs.tag }}"
           TAP_REPO="statico/homebrew-quickrag"
-          
-          if [ ! -f "homebrew/quickrag.rb" ]; then
-            echo "homebrew/quickrag.rb not found; skipping tap update" >&2
-            exit 0
-          fi
           
           # Clone or update the tap repository
           TAP_DIR="homebrew-quickrag"
@@ -141,31 +137,33 @@ jobs:
               exit 0
             }
           else
-            git clone "https://github.com/${TAP_REPO}.git" "$TAP_DIR" || {
-              echo "Tap repository not found; create it at github.com/${TAP_REPO}" >&2
-              echo "HOMEBREW_TAP_TOKEN not set; skipping tap update" >&2
-              exit 0
-            }
+            echo "HOMEBREW_TAP_TOKEN not set; skipping tap update" >&2
+            echo "To enable automatic Homebrew updates, set HOMEBREW_TAP_TOKEN secret in repository settings" >&2
+            exit 0
           fi
           
-          mkdir -p "$TAP_DIR/Formula"
-          cp homebrew/quickrag.rb "$TAP_DIR/Formula/quickrag.rb"
           pushd "$TAP_DIR" >/dev/null
+          
+          # Update the formula version and URL
+          sed -i.bak \
+            -e "s|version \".*\"|version \"${VERSION}\"|g" \
+            -e "s|url \".*quickrag/archive/refs/tags/.*\"|url \"https://github.com/statico/quickrag/archive/refs/tags/${TAG}.tar.gz\"|g" \
+            quickrag.rb
+          rm -f quickrag.rb.bak
           
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Formula/quickrag.rb || true
+          git add quickrag.rb || true
           if git diff --cached --quiet; then
             echo "Tap formula unchanged; skipping push" >&2
             popd >/dev/null
             exit 0
           fi
           git commit -m "chore(homebrew): update formula to v${VERSION}"
-          if [ -n "${HOMEBREW_TAP_TOKEN:-}" ]; then
-            git push origin main || git push origin master || echo "Push failed; ensure HOMEBREW_TAP_TOKEN has repo permissions"
-          else
-            echo "HOMEBREW_TAP_TOKEN not set; manual push required" >&2
-          fi
+          git push origin main || git push origin master || {
+            echo "Push failed; ensure HOMEBREW_TAP_TOKEN has write permissions" >&2
+            exit 1
+          }
           popd >/dev/null
 
       - name: Create release
